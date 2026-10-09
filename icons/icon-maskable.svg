@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#c8102e"/>
+  <g transform="translate(256 256) scale(.72) translate(-256 -256)">
+    <text x="256" y="200" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-weight="700" font-size="150" fill="#fff">Rp</text>
+    <text x="256" y="326" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-weight="700" font-size="90" fill="#fff" opacity=".9">⇄</text>
+    <text x="256" y="442" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-weight="700" font-size="130" fill="#fff">¥</text>
+  </g>
+</svg>

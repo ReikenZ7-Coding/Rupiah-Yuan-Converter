@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Rupiah ⇄ Yuan Converter</title>
+  <meta name="theme-color" content="#c8102e">
+  <meta name="description" content="Convert Indonesian Rupiah and Chinese Yuan at the latest exchange rate.">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="IDR⇄CNY">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="card">
+    <h1>Rupiah ⇄ Yuan</h1>
+    <p class="sub">Indonesian Rupiah and Chinese Yuan, at the latest exchange rate.</p>
+
+    <div id="rows" class="rows">
+      <label class="row" data-currency="IDR">
+        <span class="row-head"><span class="badge">IDR</span><span class="name">Indonesian Rupiah</span></span>
+        <span class="field"><span class="symbol" aria-hidden="true">Rp</span>
+          <input id="idr" type="text" inputmode="decimal" autocomplete="off" placeholder="0" aria-label="Amount in Rupiah"></span>
+      </label>
+
+      <button id="swap" class="swap" type="button" title="Swap order" aria-label="Swap order of the currencies">⇅</button>
+
+      <label class="row" data-currency="CNY">
+        <span class="row-head"><span class="badge">CNY</span><span class="name">Chinese Yuan (RMB)</span></span>
+        <span class="field"><span class="symbol" aria-hidden="true">¥</span>
+          <input id="cny" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00" aria-label="Amount in Yuan"></span>
+      </label>
+    </div>
+
+    <dl class="rates" aria-label="Current rate">
+      <div><dt>1 CNY</dt><dd id="rate-cny">–</dd></div>
+      <div><dt>Rp 10.000</dt><dd id="rate-idr">–</dd></div>
+    </dl>
+
+    <div class="status" role="status" aria-live="polite">
+      <span id="dot" class="dot loading" aria-hidden="true"></span>
+      <span id="status-text">Fetching the latest rate…</span>
+      <button id="refresh" class="refresh" type="button">Refresh</button>
+    </div>
+    <p id="status-detail" class="detail"></p>
+  </main>
+
+  <p class="foot">Rates are mid-market and for reference only. Banks and money changers add their own margin.</p>
+
+  <script src="converter.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
