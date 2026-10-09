@@ -41,6 +41,21 @@
       <div><dt>Rp 10.000</dt><dd id="rate-idr">–</dd></div>
     </dl>
 
+    <section class="history" aria-labelledby="hist-title">
+      <div class="hist-head">
+        <h2 id="hist-title">Rupiah per ¥1</h2>
+        <div class="ranges" role="group" aria-label="Time range">
+          <button type="button" data-days="7" aria-pressed="false">7D</button>
+          <button type="button" data-days="30" aria-pressed="false">30D</button>
+          <button type="button" data-days="90" aria-pressed="true">90D</button>
+          <button type="button" data-days="365" aria-pressed="false">1Y</button>
+        </div>
+      </div>
+      <p id="hist-summary" class="hist-summary"></p>
+      <div id="chart" class="chart" aria-live="polite">Loading history…</div>
+      <p id="hist-note" class="detail"></p>
+    </section>
+
     <div class="status" role="status" aria-live="polite">
       <span id="dot" class="dot loading" aria-hidden="true"></span>
       <span id="status-text">Fetching the latest rate…</span>
@@ -52,6 +67,8 @@
   <p class="foot">Rates are mid-market and for reference only. Banks and money changers add their own margin.</p>
 
   <script src="converter.js"></script>
+  <script src="chart.js"></script>
   <script src="app.js"></script>
+  <script src="history.js"></script>
 </body>
 </html>

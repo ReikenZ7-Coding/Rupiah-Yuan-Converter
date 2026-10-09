@@ -8,10 +8,10 @@
  *
  * Bump CACHE_VERSION when you add or rename a file in SHELL.
  */
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';
 const CACHE = 'idr-cny-' + CACHE_VERSION;
 const SHELL = [
-  './', 'index.html', 'style.css', 'converter.js', 'app.js', 'manifest.webmanifest',
+  './', 'index.html', 'style.css', 'converter.js', 'chart.js', 'app.js', 'history.js', 'manifest.webmanifest',
   'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/apple-touch-icon.png',
 ];
 

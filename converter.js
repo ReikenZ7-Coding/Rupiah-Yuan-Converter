@@ -99,6 +99,58 @@
     throw new Error('unknown currency: ' + from);
   }
 
+  // Daily reference-rate history (European Central Bank data), as { date, rate } points.
+  const HISTORY_SOURCES = [
+    {
+      name: 'frankfurter.dev',
+      url: (start, end) => 'https://api.frankfurter.dev/v1/' + start + '..' + end + '?base=CNY&symbols=IDR',
+    },
+    {
+      name: 'frankfurter.app',
+      url: (start, end) => 'https://api.frankfurter.app/' + start + '..' + end + '?from=CNY&to=IDR',
+    },
+  ];
+  const DAY_MS = 86400000;
+  const isoDate = (ms) => new Date(ms).toISOString().slice(0, 10);
+
+  /** The { start, end } ISO dates (UTC) for a window of `days` ending at `now`. */
+  function historyRange(days, now = Date.now()) {
+    return { start: isoDate(now - days * DAY_MS), end: isoDate(now) };
+  }
+
+  /** Keep only well-formed, plausible points, sorted by date with no duplicates. */
+  function cleanHistory(points) {
+    const byDate = new Map();
+    for (const p of Array.isArray(points) ? points : []) {
+      if (p && /^\d{4}-\d{2}-\d{2}$/.test(p.date) && Number.isFinite(Date.parse(p.date)) && isPlausibleRate(p.rate)) {
+        byDate.set(p.date, { date: p.date, rate: p.rate });
+      }
+    }
+    return [...byDate.values()].sort((a, b) => (a.date < b.date ? -1 : 1));
+  }
+
+  /** Turn a Frankfurter time-series body into points; throws if it is unusable. */
+  function parseHistory(body) {
+    const rates = body && body.rates;
+    if (!rates || typeof rates !== 'object') throw new Error('unexpected response');
+    const points = cleanHistory(Object.keys(rates).map((date) => ({ date, rate: rates[date] && rates[date].IDR })));
+    if (points.length < 2) throw new Error('not enough data points');
+    return points;
+  }
+
+  /** Merge several point lists; later lists win on the same date. */
+  function mergeHistory(...lists) {
+    return cleanHistory([].concat(...lists));
+  }
+
+  /** The points within `days` of the newest point (all of them if that leaves fewer than 2). */
+  function sliceDays(points, days) {
+    if (points.length < 2) return points;
+    const cutoff = Date.parse(points[points.length - 1].date) - days * DAY_MS;
+    const slice = points.filter((p) => Date.parse(p.date) >= cutoff);
+    return slice.length >= 2 ? slice : points;
+  }
+
   function isPlausibleRate(rate) {
     return typeof rate === 'number' && Number.isFinite(rate) &&
       rate >= MIN_PLAUSIBLE_RATE && rate <= MAX_PLAUSIBLE_RATE;
@@ -140,7 +192,31 @@
     throw error;
   }
 
+  /**
+   * Fetch daily IDR-per-CNY history for the last `days` days. Resolves to
+   * { points, source }; rejects with `.failures` like fetchRate.
+   */
+  async function fetchHistory({ fetchFn, days = 365, now, timeoutMs = 10000, sources = HISTORY_SOURCES } = {}) {
+    fetchFn = fetchFn || (typeof fetch === 'function' ? fetch.bind(globalThis) : null);
+    if (!fetchFn) throw new Error('fetch is not available');
+
+    const { start, end } = historyRange(days, now);
+    const failures = [];
+    for (const src of sources) {
+      try {
+        const points = parseHistory(await fetchJson(fetchFn, src.url(start, end), timeoutMs));
+        return { points, source: src.name };
+      } catch (err) {
+        failures.push(src.name + ': ' + (err && err.name === 'AbortError' ? 'timed out' : err.message));
+      }
+    }
+    const error = new Error('All history providers failed');
+    error.failures = failures;
+    throw error;
+  }
+
   return {
+    HISTORY_SOURCES, historyRange, cleanHistory, parseHistory, mergeHistory, sliceDays, fetchHistory,
     PROVIDERS, parseAmount, formatIDR, formatCNY, convert, isPlausibleRate, fetchRate,
   };
 });
