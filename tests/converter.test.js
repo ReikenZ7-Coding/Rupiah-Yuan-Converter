@@ -84,3 +84,66 @@ test('fetchRate times out a hung provider and moves on', async () => {
   assert.equal(r.rate, 2290);
   assert.equal(calls, 2);
 });
+
+// ---- history ---------------------------------------------------------------
+
+test('historyRange covers the requested number of days in UTC', () => {
+  const now = Date.parse('2026-10-09T23:30:00Z');
+  assert.deepEqual(C.historyRange(7, now), { start: '2026-10-02', end: '2026-10-09' });
+  assert.deepEqual(C.historyRange(365, now), { start: '2025-10-09', end: '2026-10-09' });
+});
+
+test('parseHistory sorts by date and drops bad points', () => {
+  const pts = C.parseHistory({ rates: {
+    '2026-10-03': { IDR: 2660 }, '2026-10-01': { IDR: 2650 }, '2026-10-02': { IDR: 7 }, // implausible
+    'nonsense': { IDR: 2655 }, '2026-10-04': {},
+  } });
+  assert.deepEqual(pts, [{ date: '2026-10-01', rate: 2650 }, { date: '2026-10-03', rate: 2660 }]);
+});
+
+test('parseHistory rejects unusable bodies', () => {
+  for (const body of [null, {}, { rates: [] }, { rates: { '2026-10-01': { IDR: 2650 } } }]) {
+    assert.throws(() => C.parseHistory(body), undefined, JSON.stringify(body));
+  }
+});
+
+test('mergeHistory lets later lists win on the same date', () => {
+  const a = [{ date: '2026-01-01', rate: 2500 }, { date: '2026-01-08', rate: 2510 }];
+  const b = [{ date: '2026-01-08', rate: 2520 }, { date: '2026-01-09', rate: 2530 }];
+  assert.deepEqual(C.mergeHistory(a, b), [
+    { date: '2026-01-01', rate: 2500 }, { date: '2026-01-08', rate: 2520 }, { date: '2026-01-09', rate: 2530 },
+  ]);
+});
+
+test('cleanHistory tolerates garbage (e.g. a corrupted cache)', () => {
+  assert.deepEqual(C.cleanHistory('nope'), []);
+  assert.deepEqual(C.cleanHistory([null, 1, { date: '2026-01-01', rate: '2500' }]), []);
+});
+
+test('sliceDays windows relative to the newest point and never returns fewer than 2', () => {
+  const pts = ['2026-09-01', '2026-09-20', '2026-10-01', '2026-10-08', '2026-10-09'].map((date) => ({ date, rate: 2600 }));
+  assert.deepEqual(C.sliceDays(pts, 7).map((p) => p.date), ['2026-10-08', '2026-10-09']);
+  assert.equal(C.sliceDays(pts, 365).length, 5);
+  assert.equal(C.sliceDays(pts, 0).length, 5); // only 1 point in range, so fall back to everything
+});
+
+const seriesBody = (idr) => ({ ok: true, json: async () => ({ rates: { '2026-10-01': { IDR: idr }, '2026-10-02': { IDR: idr + 5 } } }) });
+
+test('fetchHistory builds the right URL and returns points with the source', async () => {
+  const urls = [];
+  const r = await C.fetchHistory({ days: 30, now: Date.parse('2026-10-09T12:00:00Z'), fetchFn: async (u) => { urls.push(u); return seriesBody(2650); } });
+  assert.equal(urls[0], 'https://api.frankfurter.dev/v1/2026-09-09..2026-10-09?base=CNY&symbols=IDR');
+  assert.equal(r.source, 'frankfurter.dev');
+  assert.equal(r.points.length, 2);
+});
+
+test('fetchHistory falls back to the second source, and reports all failures if both fail', async () => {
+  let n = 0;
+  const r = await C.fetchHistory({ fetchFn: async () => (n++ === 0 ? { ok: false, status: 500 } : seriesBody(2650)) });
+  assert.equal(r.source, 'frankfurter.app');
+
+  await assert.rejects(
+    C.fetchHistory({ fetchFn: async () => { throw new Error('offline'); } }),
+    (err) => err.failures.length === C.HISTORY_SOURCES.length,
+  );
+});

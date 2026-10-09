@@ -31,15 +31,17 @@ Offline support lives in `sw.js`. If you add or rename a file, add it to the `SH
 - Several free, key-less sources are tried in turn (open.er-api.com, the fawazahmed0 currency-api and its mirror, frankfurter.dev). The first sensible answer wins; rates outside 100–100,000 IDR per CNY are rejected.
 - The last good rate is saved in `localStorage`, so the app still works offline and shows that the rate is from the cache.
 
-**About "live":** these free sources publish mid-market rates that update about once a day, not tick by tick. The app shows when it last fetched and the date the source says the rate is from. Rates are for reference only. Banks and money changers add a margin.
+- **Rate history chart:** daily rates for the last 7 days, 30 days, 90 days or year, drawn as a plain SVG line chart (hover or touch to read a value). It comes from the European Central Bank's daily reference rates via frankfurter, needs no key, and is cached for 6 hours. If it can't be loaded, the converter still works.
+
+**About "live":** these free sources publish mid-market rates that update about once a day, not tick by tick, so there is no second-by-second chart: free feeds for this currency pair don't exist, and a pair like this barely moves within a minute anyway. The app shows when it last fetched and the date the source says the rate is from. The history chart uses a different source (ECB reference rates), so its latest point can differ slightly from the live rate. Rates are for reference only. Banks and money changers add a margin.
 
 ## Tests
 
 ```bash
-node --test tests/converter.test.js
+node --test tests/*.test.js
 ```
 
-Covers amount parsing, formatting, conversion and the provider fallback and timeout logic (with a mocked `fetch`).
+Covers amount parsing, formatting, conversion, the provider fallback and timeout logic (with a mocked `fetch`), history parsing and merging, and the chart geometry.
 
 ## Files
 
@@ -47,6 +49,8 @@ Covers amount parsing, formatting, conversion and the provider fallback and time
 | --- | --- |
 | `converter.js` | Pure logic (parsing, formatting, conversion, rate fetching); works in the browser and Node |
 | `app.js` | DOM wiring, refresh timer, caching |
+| `chart.js` | Chart geometry (pure maths, unit-tested) |
+| `history.js` | History chart: fetching, caching, SVG drawing, hover |
 | `index.html`, `style.css` | UI, with light and dark themes |
 | `manifest.webmanifest`, `icons/` | Install metadata and app icons (`icon.svg` is the source for the PNGs) |
 | `sw.js` | Service worker: caches the app shell for offline use |
